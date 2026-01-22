@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>BOSS TRACKER</title>
+
+<style>
+:root{
+ --neon-green:#00ff9c;
+ --neon-blue:#0094ff;
+ --neon-red:#ff3b3b;
+ --gold:#ffd700;
+}
+
+body{
+  background:#0b0b0b;
+  color:var(--gold);
+  font-family:'Designer','Orbitron','Segoe UI',sans-serif;
+  padding:40px 40px 40px 300px;
+}
+
+h1{
+  text-align:center;
+  color:#fff;
+  font-size:65px;
+  font-weight:900;
+  letter-spacing:1px;
+  margin-bottom:18px;
+}
+
+/* LEFT PANEL */
+#nextBossPanel{
+ position:fixed;
+ left:15px;
+ top:20px;
+ width:260px;
+ background:#111;
+ border:3px solid var(--neon-green);
+ border-radius:55px;
+ padding:35px;
+ box-shadow:0 0 25px rgba(0,255,156,0.35);
+}
+
+#nextBossPanel h3{text-align:center;color:#eeeeee}
+#nextBossName{text-align:center;font-size:2em;margin-top:10px}
+#nextBossTimer{text-align:center;font-size:3.2em;margin:7px 0}
+#nextBossTime{text-align:center;font-size:.9em;color:#FFFFFF}
+
+/* ================= SMALL TOP BUTTONS ================= */
+.top-controls{
+ width:200px;
+ margin:10px auto 25px;
+ display:flex;
+ flex-direction:column;
+ gap:10px;
+}
+
+.control-bar{
+ width:100%;
+ height:46px;
+ border:none;
+ font-size:15px;
+ font-weight:900;
+ letter-spacing:2px;
+ cursor:pointer;
+ border-radius:8px;
+ transition:.25s;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+}
+
+/* COLORS */
+.control-sort{
+ background:#39ff14;
+ color:#000;
+ box-shadow:0 0 12px rgba(57,255,20,0.6);
+}
+
+.control-sort.off{
+ background:#ff3b3b;
+ color:#fff;
+ box-shadow:0 0 12px rgba(255,59,59,0.6);
+}
+
+.control-reset{
+ background:#0094ff;
+ color:#fff;
+ box-shadow:0 0 12px rgba(0,148,255,0.6);
+}
+
+.control-sound{
+ background:#ffd700;
+ color:#000;
+ box-shadow:0 0 12px rgba(255,215,0,0.7);
+}
+
+.control-sound.off{
+ background:#666;
+ color:#fff;
+ box-shadow:none;
+}
+
+.control-bar:hover{
+ transform:scale(1.02);
+ filter:brightness(1.15);
+}
+
+/* ================= CARDS ================= */
+.container{
+ display:flex;
+ flex-wrap:wrap;
+ gap:20px;
+ justify-content:center;
+}
+
+.card{
+ background:#111;
+ border:2px solid var(--gold);
+ border-radius:10px;
+ padding:18px;
+ width:300px;
+ text-align:center;
+ transition:.25s;
+}
+
+.card.next{
+ border-color:var(--neon-green);
+ box-shadow:0 0 30px rgba(0,255,156,0.6);
+}
+
+.card h2{
+ color:#fff;
+ font-size:40px;
+ letter-spacing:3px;
+ text-shadow:0 0 8px rgba(255,255,255,0.45);
+}
+
+.timer{
+ font-size:50px;
+ font-weight:900;
+ color:#fff;
+}
+
+/* INPUT */
+input[type="datetime-local"]{
+ width:100%;
+ height:44px;
+ font-size:14px;
+ padding:6px 12px;
+ border-radius:8px;
+ border:1px solid #333;
+ background:#0a0a0a;
+ color:#fff;
+ margin-top:10px;
+ box-sizing:border-box;
+}
+
+input[type="datetime-local"]::-webkit-calendar-picker-indicator{
+ filter: invert(1) brightness(1.6) contrast(1.3)
+ drop-shadow(0 0 3px rgba(255,255,255,0.9));
+ opacity:1;
+ transform:scale(0.85);
+ cursor:pointer;
+}
+
+/* BUTTONS */
+button{
+ width:100%;
+ margin-top:10px;
+ padding:12px;
+ font-weight:bold;
+ cursor:pointer;
+ border:none;
+ border-radius:8px;
+ transition:.25s;
+}
+
+.set-manual{
+ background:#0094ff;
+ color:#fff;
+ box-shadow:0 0 15px rgba(0,148,255,0.8);
+}
+.set-manual:hover{
+ box-shadow:0 0 28px rgba(0,148,255,1);
+ transform:scale(1.03);
+}
+
+.killed-now{
+ background:#ff3b3b;
+ color:#fff;
+ box-shadow:0 0 15px rgba(255,59,59,0.8);
+}
+.killed-now:hover{
+ box-shadow:0 0 28px rgba(255,59,59,1);
+ transform:scale(1.03);
+}
+
+/* ALERT */
+@keyframes dangerPulse {
+  0%{text-shadow:0 0 10px rgba(255,0,0,0.5);}
+  50%{text-shadow:0 0 35px rgba(255,0,0,0.9);}
+  100%{text-shadow:0 0 10px rgba(255,0,0,0.5);}
+}
+
+#nextBossTimer.danger{
+  color:#ff2a2a !important;
+  animation: dangerPulse 1.2s infinite;
+}
+</style>
+</head>
+
+<body>
+
+<div id="nextBossPanel">
+ <h3>NEXT SPAWN</h3>
+ <div id="nextBossName">---</div>
+ <div id="nextBossTimer">--:--:--</div>
+ <div id="nextBossTime">---</div>
+</div>
+
+<h1>BOSS TRACKER</h1>
+
+<!-- SMALL 3 BUTTON STACK -->
+<div class="top-controls">
+  <button class="control-bar control-sort" id="sortBtn">AUTO SORT: ON</button>
+  <button class="control-bar control-reset" onclick="resetAll()">RESET ALL</button>
+  <button class="control-bar control-sound" id="soundBtn">ALARM: ON</button>
+</div>
+
+<div class="container" id="bossContainer"></div>
+
+<audio id="sound">
+ <source src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg">
+</audio>
+
+<script>
+let inputLock=false;
+document.addEventListener("focusin",e=>{if(e.target.type==="datetime-local") inputLock=true;});
+document.addEventListener("focusout",e=>{if(e.target.type==="datetime-local") inputLock=false;});
+
+const bosses=[
+ {id:"1",name:"MP CAMP",respawn:1},
+ {id:"2",name:"SG CAMP",respawn:1},
+ {id:"3",name:"PH CAMP",respawn:1},
+ {id:"4",name:"MP HOLE",respawn:1},
+ {id:"5",name:"PH HOLE",respawn:1},
+ {id:"6",name:"EF SG HOLE",respawn:2},
+ {id:"7",name:"EF MP HOLE",respawn:2},
+ {id:"8",name:"EF PH HOLE",respawn:2},
+ {id:"9",name:"DARK SWORDSMAN",respawn:2},
+ {id:"10",name:"NINJA KNIFE",respawn:2},
+ {id:"11",name:"B3 DAM",respawn:1},
+ {id:"12",name:"S1 DAM",respawn:1},
+ {id:"13",name:"PY CRUEL JUPITER",respawn:8},
+ {id:"14",name:"SHIBUYA CRUEL JUPITER",respawn:12},
+];
+
+const container=document.getElementById("bossContainer");
+const sound=document.getElementById("sound");
+const sortBtn=document.getElementById("sortBtn");
+const soundBtn=document.getElementById("soundBtn");
+const nextBossTimer=document.getElementById("nextBossTimer");
+
+let autoSort=true;
+let alarmOn=true;
+let alerted={};
+let lastBeepSecond=null;
+let voiceSpoken={};
+
+/* TTS */
+function speak(text){
+ const u=new SpeechSynthesisUtterance(text);
+ u.rate=1;
+ u.pitch=1;
+ speechSynthesis.speak(u);
+}
+
+
+/* CREATE CARDS */
+bosses.forEach(b=>{
+ const card=document.createElement("div");
+ card.className="card";
+ card.id=b.id+"-card";
+ card.innerHTML=`
+  <h2>${b.name}</h2>
+  <div class="timer" id="${b.id}-timer">--:--:--</div>
+  <div id="${b.id}-next">Next Spawn: --</div>
+  <input type="datetime-local" id="${b.id}-input">
+  <button class="set-manual" onclick="manual('${b.id}',${b.respawn})">Set Manual</button>
+  <button class="killed-now" onclick="now('${b.id}',${b.respawn})">Killed Now</button>
+ `;
+ container.appendChild(card);
+});
+
+/* BUTTONS */
+sortBtn.onclick=()=>{
+ autoSort=!autoSort;
+ sortBtn.textContent="AUTO SORT: "+(autoSort?"ON":"OFF");
+ sortBtn.classList.toggle("off",!autoSort);
+};
+
+soundBtn.onclick=()=>{
+ alarmOn=!alarmOn;
+ soundBtn.textContent="ALARM: "+(alarmOn?"ON":"SILENT");
+ soundBtn.classList.toggle("off",!alarmOn);
+};
+
+/* LOGIC */
+function now(id,h){ setNext(id,h,new Date()) }
+
+function manual(id,h){
+ const v=document.getElementById(id+"-input").value;
+ if(!v)return alert("Enter time");
+ setNext(id,h,new Date(v));
+}
+
+function setNext(id,h,k){
+ localStorage.setItem(id,new Date(k.getTime()+h*3600000));
+ alerted[id]=false;
+ voiceSpoken[id]={};
+}
+
+function resetAll(){
+ if(!confirm("Reset ALL timers?"))return;
+ localStorage.clear();
+ location.reload();
+}
+
+/* UPDATE LOOP */
+function update(){
+ if(inputLock) return;
+
+ let soonest=null,soonId=null,sortData=[];
+
+ bosses.forEach(b=>{
+  const t=localStorage.getItem(b.id);
+  const timer=document.getElementById(b.id+"-timer");
+  const next=document.getElementById(b.id+"-next");
+  const card=document.getElementById(b.id+"-card");
+  card.classList.remove("next");
+
+  if(!t){ sortData.push({id:b.id,time:Infinity}); return; }
+
+  const d=new Date(t)-new Date();
+
+  if(d<=0){
+   timer.textContent="SPAWNED!";
+   next.textContent="NOW";
+   if(!alerted[b.id]){
+     if(alarmOn){
+       sound.currentTime=0; sound.play();
+       speak(b.name+" has spawned");
+     }
+     alerted[b.id]=true;
+   }
+   sortData.push({id:b.id,time:0});
+   return;
+  }
+
+  sortData.push({id:b.id,time:d});
+  if(soonest===null||d<soonest){soonest=d;soonId=b.id;}
+
+  const h=String(Math.floor(d/3600000)).padStart(2,"0");
+  const m=String(Math.floor(d%3600000/60000)).padStart(2,"0");
+  const s=String(Math.floor(d%60000/1000)).padStart(2,"0");
+  timer.textContent=`${h}:${m}:${s}`;
+  next.textContent="Next: "+new Date(t).toLocaleString();
+ });
+
+ if(autoSort){
+   sortData.sort((a,b)=>a.time-b.time);
+   sortData.forEach(o=>container.appendChild(document.getElementById(o.id+"-card")));
+ }
+
+ if(soonId){
+  document.getElementById(soonId+"-card").classList.add("next");
+
+  const b=bosses.find(x=>x.id===soonId);
+  document.getElementById("nextBossName").textContent=b.name;
+  document.getElementById("nextBossTimer").textContent=document.getElementById(soonId+"-timer").textContent;
+  document.getElementById("nextBossTime").textContent="Spawns at: "+new Date(localStorage.getItem(soonId)).toLocaleString();
+
+  /* VOICE LAST 5 SECONDS */
+  if(soonest<=5000 && soonest>0){
+    const sec=Math.ceil(soonest/1000);
+    if(!voiceSpoken[soonId]?.[sec]){
+      speak(sec.toString());
+      if(!voiceSpoken[soonId]) voiceSpoken[soonId]={};
+      voiceSpoken[soonId][sec]=true;
+    }
+  }
+
+  if(soonest<=10000&&soonest>0){
+    const sec=Math.ceil(soonest/1000);
+    if(lastBeepSecond!==sec){
+      if(alarmOn){
+        sound.currentTime=0; sound.play();
+      }
+      lastBeepSecond=sec;
+    }
+  }else{ lastBeepSecond=null; }
+
+  if(soonest<=5*60*1000) nextBossTimer.classList.add("danger");
+  else nextBossTimer.classList.remove("danger");
+ }
+}
+
+setInterval(update,1000);
+</script>
+
+</body>
+</html>
